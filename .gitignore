@@ -1,0 +1,6 @@
+server/node_modules
+client/node_modules
+server/.env
+ml_service/.env
+ml_service/models/best.pt
+client/android
