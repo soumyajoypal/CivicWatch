@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import MapView, { Circle, Marker } from "react-native-maps";
 import { useDispatch, useSelector } from "react-redux";
-import { getBillBoardFeed } from "../../lib/Slices/billBoardSlice";
+import { getBillBoardFeed } from "../../lib/Slices/civicIssueSlice";
 const BillboardMap = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { billboards, status } = useSelector(

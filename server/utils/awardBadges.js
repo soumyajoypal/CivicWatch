@@ -4,17 +4,26 @@ const NormalUser = require("../models/userSchema");
 const checkAndAwardBadges = async (userId, action = {}) => {
   const user = await NormalUser.findById(userId);
   if (!user) return;
-  console.log(user);
 
+  // --- Stats ---
   const reportsCount = await Report.countDocuments({ reportedBy: userId });
   const zonesReported = await Report.distinct("location.zoneId", {
     reportedBy: userId,
   });
-  const commentsCount = user.commentsMade || 0; 
-  const overriddenCount = user.aiOverridesCorrect || 0; 
+  const commentsCount =
+    (
+      await Report.aggregate([
+        { $unwind: "$comments" },
+        { $match: { "comments.user": user._id } },
+        { $count: "total" },
+      ])
+    )[0]?.total || 0;
+
+  const overriddenCount = user.aiOverridesCorrect || 0; // track in schema
 
   const badgesToAward = [];
 
+  // --- Badge conditions ---
   if (reportsCount === 1 && !hasBadge(user, "Rookie Reporter")) {
     badgesToAward.push({
       name: "Rookie Reporter",
@@ -22,10 +31,10 @@ const checkAndAwardBadges = async (userId, action = {}) => {
     });
   }
 
-  if (reportsCount === 5 && !hasBadge(user, "Persistent Eye")) {
+  if (reportsCount >= 5 && !hasBadge(user, "Persistent Eye")) {
     badgesToAward.push({
       name: "Persistent Eye",
-      description: "Submitted 5 reports!",
+      description: "Submitted 5+ reports!",
     });
   }
 
@@ -43,34 +52,34 @@ const checkAndAwardBadges = async (userId, action = {}) => {
   if (zonesReported.length >= 3 && !hasBadge(user, "Zone Expert")) {
     badgesToAward.push({
       name: "Zone Expert",
-      description: "Reported in 3 different zones.",
+      description: "Reported issues in 3 different zones.",
     });
   }
 
   if (overriddenCount >= 3 && !hasBadge(user, "AI Challenger")) {
     badgesToAward.push({
       name: "AI Challenger",
-      description: "Correctly overrode AI verdict 3 times.",
+      description: "Correctly overrode AI verdict 3+ times.",
     });
   }
 
   if (commentsCount >= 5 && !hasBadge(user, "Social Critic")) {
     badgesToAward.push({
       name: "Social Critic",
-      description: "Commented on 5 reports.",
+      description: "Commented on 5+ reports.",
     });
   }
 
+  // --- Award badges ---
   if (badgesToAward.length > 0) {
     user.badges.push(
       ...badgesToAward.map((b) => ({ ...b, dateEarned: new Date() }))
     );
     await user.save();
   }
-  console.log(user);
 };
 
 const hasBadge = (user, badgeName) =>
-  user.badges.some((b) => b.name === badgeName);
+  user.badges?.some((b) => b.name === badgeName);
 
 module.exports = checkAndAwardBadges;

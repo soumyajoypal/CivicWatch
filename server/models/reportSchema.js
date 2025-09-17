@@ -16,17 +16,18 @@ const reportSchema = new mongoose.Schema({
     required: [true, "Issue description is required!"],
     trim: true,
   },
-  violationType: {
+  issueType: {
     type: [String],
     required: true,
     enum: [
-      "size_violation",
-      "illegal_location",
-      "structural_hazard",
-      "missing_license",
-      "obscene_content",
-      "political_violation",
+      "potholes",
+      "overflowing_bin",
+      "broken_streetlight",
+      "waterlogging",
+      "fallen_tree",
+      "illegal_dumping",
       "other",
+      "restricted_zone",
     ],
   },
   //geo-data
@@ -43,19 +44,6 @@ const reportSchema = new mongoose.Schema({
     address: { type: String, default: "N/A" },
     zoneId: { type: String, default: "N/A" },
   },
-  //compliance data
-  suspectedDimensions: {
-    height: { type: Number },
-    width: { type: Number },
-  },
-  qrCodeDetected: {
-    type: Boolean,
-    default: false,
-  },
-  licenseId: {
-    type: String,
-  },
-  //user info
   reportedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
@@ -65,11 +53,10 @@ const reportSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-  //ai info
   aiAnalysis: {
     verdict: {
       type: String,
-      enum: ["unauthorized", "authorized", "unsure"],
+      enum: ["action_required", "action_not_required", "unsure"],
       default: "unsure",
     },
     confidence: { type: Number, default: 0 },
@@ -78,13 +65,13 @@ const reportSchema = new mongoose.Schema({
   //admin verification
   status: {
     type: String,
-    enum: [
-      "pending",
-      "verified_unauthorized",
-      "verified_authorized",
-      "rejected",
-    ],
+    enum: ["pending", "verified_issue", "rejected"],
     default: "pending",
+  },
+  assignedDepartment: {
+    type: [String],
+    enum: ["sanitation", "public_works", "electricity", "environment", "other"],
+    default: undefined,
   },
   reviewedBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -96,12 +83,11 @@ const reportSchema = new mongoose.Schema({
   adminNotes: {
     type: String,
   },
-  // billboard reference
-  billboard: {
+  // civic issue reference
+  civicIssue: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Billboard",
+    ref: "CivicIssue",
   },
-  //gamification
   xpAwarded: { type: Number, default: 0 },
   upvotes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   downvotes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],

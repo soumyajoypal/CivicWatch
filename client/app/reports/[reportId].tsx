@@ -271,9 +271,9 @@ const ReportDetails = () => {
             </AccordionItem>
 
             {/* change */}
-            <AccordionItem title="Violation Type" defaultOpen>
+            <AccordionItem title="Issue Type" defaultOpen>
               <Text className="font-montserrat text-base text-slate-800 leading-6">
-                {formatViolations(report.violationType)}
+                {formatViolations(report.issueType)}
               </Text>
             </AccordionItem>
 
@@ -308,17 +308,14 @@ const ReportDetails = () => {
               </View>
             </AccordionItem>
 
-            <AccordionItem title="Suspected Dimensions">
+            <AccordionItem title="Severity">
               <Text className="font-montserrat text-base text-slate-800">
-                Height: {report.suspectedDimensions?.height} | Width:
-                {report.suspectedDimensions?.width}
+                {report.severity || "N/A"}
               </Text>
             </AccordionItem>
-
-            {/* add qr code detected */}
-            <AccordionItem title="QR Code Detected">
+            <AccordionItem title="Impact">
               <Text className="font-montserrat text-base text-slate-800">
-                {report.qrCodeDetected ? "Yes" : "No"}
+                {report.impact || "N/A"}
               </Text>
             </AccordionItem>
 
@@ -328,19 +325,21 @@ const ReportDetails = () => {
                 <View className="flex-row items-center">
                   <FontAwesome
                     name={
-                      report.aiAnalysis?.verdict?.toLowerCase() === "violation"
+                      report.aiAnalysis?.verdict?.toLowerCase() ===
+                      "action_required"
                         ? "exclamation-circle"
                         : "check-circle"
                     }
                     size={18}
                     color={
-                      report.aiAnalysis?.verdict?.toLowerCase() === "violation"
+                      report.aiAnalysis?.verdict?.toLowerCase() ===
+                      "action_required"
                         ? "#ef4444"
                         : "#10b981"
                     }
                   />
                   <Text className="ml-2 font-montserratBold text-base text-slate-900">
-                    {report.aiAnalysis?.verdict || "N/A"}
+                    {report.aiAnalysis?.verdict.split("_").join(" ") || "N/A"}
                   </Text>
                 </View>
               </View>

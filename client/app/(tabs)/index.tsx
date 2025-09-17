@@ -1,4 +1,4 @@
-import { getBillBoardFeed } from "@/lib/Slices/billBoardSlice";
+import { getCivicIssueFeed } from "@/lib/Slices/civicIssueSlice";
 import { AppDispatch, RootState } from "@/store/store";
 import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused } from "@react-navigation/native";
@@ -67,15 +67,15 @@ export default function Index() {
     });
   };
 
-  const { status, error, billboards } = useSelector(
-    (state: RootState) => state.billboard
+  const { status, error, issues } = useSelector(
+    (state: RootState) => state.civicIssue
   );
 
   useEffect(() => {
-    dispatch(getBillBoardFeed())
+    dispatch(getCivicIssueFeed())
       .unwrap()
-      .catch((err) => {
-        console.error("Error fetching billboards:", err);
+      .catch((err: unknown) => {
+        console.error("Error fetching Civic Issues:", err);
       });
   }, [dispatch]);
 
@@ -186,9 +186,9 @@ export default function Index() {
           </Text>
         )}
 
-        {status === "succeeded" && billboards?.length > 0 && (
+        {status === "succeeded" && issues?.length > 0 && (
           <FlatList
-            data={billboards.slice(0, 5)} 
+            data={issues.slice(0, 5)}
             showsVerticalScrollIndicator={false}
             keyExtractor={(item) => item.id} // fix: use _id from Mongo
             renderItem={({ item }) => (
@@ -301,9 +301,9 @@ export default function Index() {
           />
         )}
 
-        {status === "succeeded" && billboards?.length === 0 && (
+        {status === "succeeded" && issues?.length === 0 && (
           <Text className="text-text-secondary text-center font-montserrat mt-5">
-            No billboard reports available.
+            No civic issue reports available.
           </Text>
         )}
       </View>

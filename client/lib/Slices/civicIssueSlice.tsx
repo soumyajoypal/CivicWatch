@@ -2,7 +2,7 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import * as SecureStore from "expo-secure-store";
 import apiRequest from "../utils/apiRequest";
 
-interface Billboard {
+interface CivicIssue {
   id: string;
   imageURL: string;
   location: any;
@@ -10,7 +10,7 @@ interface Billboard {
   verifiedStatus: string;
 }
 
-interface BillboardDetails {
+interface CivicIssueDetails {
   id: string;
   imageURL: string;
   location: any;
@@ -24,67 +24,71 @@ interface Report {
   imageURL: string;
   annotatedImageURL: string;
   aiAnalysis: {
-    verdict: "unauthorized" | "authorized" | "unsure";
+    verdict: "action_required" | "action_not_required" | "unsure";
     confidence: number;
     detectedObjects: string[];
   };
   upvotes: string[];
   downvotes: string[];
+  severity?: string;
+  impact?: string;
   communityTrustScore: number;
 }
 
-interface BillBoardState {
-  billboards: Billboard[]; // feed
-  selected: BillboardDetails | null; // current opened billboard
+interface CivicIssueState {
+  issues: CivicIssue[]; // feed
+  selected: CivicIssueDetails | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
 }
 
-const initialState: BillBoardState = {
-  billboards: [],
+const initialState: CivicIssueState = {
+  issues: [],
   selected: null,
   status: "idle",
   error: null,
 };
 
-export const getBillBoardFeed = createAsyncThunk<
-  Billboard[],
+// Feed
+export const getCivicIssueFeed = createAsyncThunk<
+  CivicIssue[],
   void,
   { rejectValue: string }
->("billboard/getBillBoardFeed", async (_, { rejectWithValue }) => {
+>("civicIssue/getCivicIssueFeed", async (_, { rejectWithValue }) => {
   try {
-    const response = await apiRequest.get("/billboard/feed", {
+    const response = await apiRequest.get("/civic-issues/feed", {
       headers: {
         Authorization: `Bearer ${await SecureStore.getItemAsync("authToken")}`,
       },
     });
-    console.log(response.data);
     return response.data.data;
   } catch (err: any) {
-    return rejectWithValue(err.message || "Failed to fetch billboards");
+    return rejectWithValue(err.message || "Failed to fetch civic issues");
   }
 });
 
-export const fetchBillboard = createAsyncThunk<
-  BillboardDetails,
+// Details
+export const fetchCivicIssue = createAsyncThunk<
+  CivicIssueDetails,
   string,
   { rejectValue: string }
->("billboard/fetchBillboard", async (billboardId, { rejectWithValue }) => {
+>("civicIssue/fetchCivicIssue", async (issueId, { rejectWithValue }) => {
   try {
     const token = await SecureStore.getItemAsync("authToken");
-    const res = await apiRequest.get<{ data: BillboardDetails }>(
-      `/billboard/details/${billboardId}`,
+    const res = await apiRequest.get<{ data: CivicIssueDetails }>(
+      `/civic-issues/details/${issueId}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     return res.data.data;
   } catch (err: any) {
-    return rejectWithValue(err.message || "Failed to fetch billboard");
+    return rejectWithValue(err.message || "Failed to fetch civic issue");
   }
 });
 
-export const getAllBillboards = createAsyncThunk<
+// Paginated fetch
+export const getAllCivicIssues = createAsyncThunk<
   {
-    billboards: Billboard[];
+    issues: CivicIssue[];
     pagination: {
       total: number;
       page: number;
@@ -103,33 +107,33 @@ export const getAllBillboards = createAsyncThunk<
     toDate?: string;
   },
   { rejectValue: string }
->("billboard/getAllBillboards", async (filters, { rejectWithValue }) => {
+>("civicIssue/getAllCivicIssues", async (filters, { rejectWithValue }) => {
   try {
     const token = await SecureStore.getItemAsync("authToken");
 
     const res = await apiRequest.get<{
-      data: Billboard[];
+      data: CivicIssue[];
       pagination: {
         total: number;
         page: number;
         limit: number;
         totalPages: number;
       };
-    }>("/billboard", {
+    }>("/civic-issues", {
       headers: { Authorization: `Bearer ${token}` },
       params: filters,
     });
-    console.log(res.data.data);
 
     return {
-      billboards: res.data.data,
+      issues: res.data.data,
       pagination: res.data.pagination,
     };
   } catch (err: any) {
-    return rejectWithValue(err.message || "Failed to fetch billboards");
+    return rejectWithValue(err.message || "Failed to fetch civic issues");
   }
 });
 
+// Voting
 export const voteReport = createAsyncThunk<
   any,
   { reportId: string; voteType: string }
@@ -153,36 +157,39 @@ export const voteReport = createAsyncThunk<
   }
 });
 
-const billBoardSlice = createSlice({
-  name: "billboard",
+const civicIssueSlice = createSlice({
+  name: "civicIssue",
   initialState,
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(getBillBoardFeed.pending, (state) => {
+      // Feed
+      .addCase(getCivicIssueFeed.pending, (state) => {
         state.status = "loading";
         state.error = null;
       })
-      .addCase(getBillBoardFeed.fulfilled, (state, action) => {
+      .addCase(getCivicIssueFeed.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.billboards = action.payload;
+        state.issues = action.payload;
       })
-      .addCase(getBillBoardFeed.rejected, (state, action) => {
+      .addCase(getCivicIssueFeed.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload ?? "Something went wrong";
       })
-      .addCase(fetchBillboard.pending, (state) => {
+      // Details
+      .addCase(fetchCivicIssue.pending, (state) => {
         state.status = "loading";
         state.error = null;
       })
-      .addCase(fetchBillboard.fulfilled, (state, action) => {
+      .addCase(fetchCivicIssue.fulfilled, (state, action) => {
         state.status = "succeeded";
         state.selected = action.payload;
       })
-      .addCase(fetchBillboard.rejected, (state, action) => {
+      .addCase(fetchCivicIssue.rejected, (state, action) => {
         state.status = "failed";
-        state.error = action.payload ?? "Failed to fetch billboard";
+        state.error = action.payload ?? "Failed to fetch civic issue";
       })
+      // Vote
       .addCase(voteReport.fulfilled, (state, action) => {
         state.status = "succeeded";
         const updatedReport = action.payload;
@@ -195,19 +202,20 @@ const billBoardSlice = createSlice({
           }
         }
       })
-      .addCase(getAllBillboards.pending, (state) => {
+      // Paginated
+      .addCase(getAllCivicIssues.pending, (state) => {
         state.status = "loading";
         state.error = null;
       })
-      .addCase(getAllBillboards.fulfilled, (state, action) => {
+      .addCase(getAllCivicIssues.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.billboards = action.payload.billboards;
+        state.issues = action.payload.issues;
       })
-      .addCase(getAllBillboards.rejected, (state, action) => {
+      .addCase(getAllCivicIssues.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload ?? "Something went wrong";
       });
   },
 });
 
-export default billBoardSlice.reducer;
+export default civicIssueSlice.reducer;

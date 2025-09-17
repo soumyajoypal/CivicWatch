@@ -1,4 +1,4 @@
-import { getAllBillboards } from "@/lib/Slices/billBoardSlice";
+import { getAllBillboards } from "@/lib/Slices/civicIssueSlice";
 import { AppDispatch, RootState } from "@/store/store";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";

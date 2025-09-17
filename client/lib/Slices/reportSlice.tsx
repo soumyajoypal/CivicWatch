@@ -11,7 +11,7 @@ interface SuspectedDimensions {
 }
 
 interface AiAnalysis {
-  verdict: "unauthorized" | "authorized" | "unsure" | null;
+  verdict: "action_required" | "action_not_required" | "unsure" | null;
   confidence: number;
   detectedObjects: string[];
 }
@@ -20,11 +20,9 @@ interface ReportState {
   imageUrl: string | null;
   annotatedUrl: string | null;
   issueDescription: string;
-  violationType: string[];
+  issueType: string[];
   location: { coordinates: number[] } | null;
-  suspectedDimensions: SuspectedDimensions | null;
   estimatedDistance: number | null;
-  qrCodeDetected: boolean;
   licenseId: string | null;
   exifData: ExifData | null;
   submitting: boolean;
@@ -33,17 +31,19 @@ interface ReportState {
   reports: any[];
 
   aiAnalysis: AiAnalysis | null;
-  userOverrideVerdict: "unauthorized" | "authorized" | "unsure" | null;
+  userOverrideVerdict:
+    | "action_required"
+    | "action_not_required"
+    | "unsure"
+    | null;
 }
 
 export interface SubmitReportPayload {
   imageURL: string;
   annotatedURL: string;
   issueDescription: string;
-  violationType: string[];
+  issueType: string[];
   location: { coordinates: number[] } | null;
-  suspectedDimensions: SuspectedDimensions | null;
-  qrCodeDetected: boolean;
   aiAnalysis: AiAnalysis;
 }
 
@@ -51,10 +51,8 @@ const initialState: ReportState = {
   imageUrl: null,
   annotatedUrl: null,
   issueDescription: "",
-  violationType: ["size_violation"],
+  issueType: [],
   location: null,
-  suspectedDimensions: null,
-  qrCodeDetected: false,
   licenseId: null,
   exifData: null,
   submitting: false,
@@ -63,7 +61,7 @@ const initialState: ReportState = {
   aiAnalysis: null,
   userOverrideVerdict: "unsure",
   status: "idle",
-  reports: [], // ✅ initialized here
+  reports: [],
 };
 
 export const submitReport = createAsyncThunk<any, SubmitReportPayload>(
@@ -89,7 +87,7 @@ export const getReportsByUser = createAsyncThunk<
   any,
   {
     status?: string;
-    violationType?: string;
+    issueType?: string;
     verdict?: string;
     page?: number;
     limit?: number;
@@ -136,7 +134,7 @@ export const getAllReports = createAsyncThunk<
   any,
   {
     status?: string;
-    violationType?: string;
+    issueType?: string;
     verdict?: string;
     page?: number;
     limit?: number;
@@ -182,13 +180,10 @@ const reportSlice = createSlice({
       state.issueDescription = action.payload;
     },
     setViolationType(state, action: PayloadAction<string[]>) {
-      state.violationType = action.payload;
+      state.issueType = action.payload;
     },
     setLocation(state, action: PayloadAction<ReportState["location"]>) {
       state.location = action.payload;
-    },
-    setSuspectedDimensions(state, action: PayloadAction<SuspectedDimensions>) {
-      state.suspectedDimensions = action.payload;
     },
     setExifData(state, action: PayloadAction<ExifData>) {
       state.exifData = action.payload;
@@ -204,7 +199,9 @@ const reportSlice = createSlice({
     },
     setUserOverrideVerdict(
       state,
-      action: PayloadAction<"unauthorized" | "authorized" | "unsure">
+      action: PayloadAction<
+        "action_required" | "action_not_required" | "unsure" | null
+      >
     ) {
       state.userOverrideVerdict = action.payload;
     },
@@ -253,7 +250,6 @@ export const {
   setIssueDescription,
   setViolationType,
   setLocation,
-  setSuspectedDimensions,
   setExifData,
   setEstimatedDistance,
   setUserOverrideVerdict,

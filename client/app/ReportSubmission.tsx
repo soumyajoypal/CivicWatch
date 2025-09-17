@@ -1,7 +1,6 @@
 import { refreshLocation } from "@/lib/Slices/locationSlice";
 import {
   resetReport,
-  setEstimatedDistance,
   setIssueDescription,
   setUserOverrideVerdict,
   submitReport,
@@ -69,8 +68,6 @@ export default function ReportSubmissionDemo() {
       const res = await apiRequest.post("/model/analyze", {
         url: decodedImageUrl,
         location: loc,
-        exifData: exifData,
-        estimatedDistance: Number(estimatedDistance) || null,
       });
 
       if (res.data.status === "success") {
@@ -96,7 +93,7 @@ export default function ReportSubmissionDemo() {
         imageURL: decodedImageUrl,
         annotatedURL: verdict?.annotatedImageUrl || "",
         issueDescription,
-        violationType: verdict?.violations || null,
+        issueType: verdict?.violations || null,
         location: location?.coords
           ? {
               type: "Point",
@@ -106,10 +103,6 @@ export default function ReportSubmissionDemo() {
               ],
             }
           : null,
-        suspectedDimensions: verdict?.details
-          ? { width: verdict.details.width, height: verdict.details.height }
-          : null,
-        qrCodeDetected: verdict?.qrCodeDetected || false,
         aiAnalysis: {
           verdict: userOverrideVerdict,
           confidence: verdict?.aiAnalysis?.confidence || 0,
@@ -153,7 +146,7 @@ export default function ReportSubmissionDemo() {
               Submit Report
             </Text>
             <Text className="text-sm text-neutral-500 mt-1 font-montserrat">
-              Help us verify and act on violations quickly
+              Help us verify and act on issues quickly
             </Text>
           </View>
 
@@ -222,32 +215,6 @@ export default function ReportSubmissionDemo() {
           {/* Distance Input + helper + Run AI (only BEFORE verdict) */}
           {!verdict && (
             <>
-              <View className="flex-row items-center bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2 mb-2">
-                <MaterialCommunityIcons
-                  name="map-marker-distance"
-                  size={24}
-                  color="#9CA3AF"
-                  className="mr-2"
-                />
-                <TextInput
-                  className="flex-1 text-base text-neutral-900 font-montserrat"
-                  placeholder="Write the Estimated distance (m)"
-                  placeholderTextColor="#9CA3AF"
-                  keyboardType="numeric"
-                  value={
-                    estimatedDistance != null ? String(estimatedDistance) : ""
-                  }
-                  onChangeText={(t) =>
-                    dispatch(
-                      setEstimatedDistance(Number(t.replace(/[^\d.]/g, "")))
-                    )
-                  }
-                />
-              </View>
-              <Text className="text-xs text-neutral-500 font-montserrat">
-                Please enter the distance between you and the billboard.
-              </Text>
-
               <TouchableOpacity
                 onPress={handleAiAnalysis}
                 disabled={loadingAi}
@@ -313,40 +280,40 @@ export default function ReportSubmissionDemo() {
                   </Text>
                 </View>
 
-                {/* Size */}
+                {/* Severity */}
                 <View className="flex-1 bg-neutral-50 border border-neutral-200 rounded-2xl p-4 items-center justify-center">
                   <MaterialCommunityIcons
-                    name="ruler-square"
+                    name="alert-octagon"
                     size={22}
-                    color="#4C1D95" // primary-main
+                    color="#4C1D95"
                   />
                   <Text className="mt-1 text-sm text-primary-main font-montserrat">
-                    Size
+                    Severity
                   </Text>
                   <Text className="mt-1 text-base text-neutral-900 font-montserratBold text-center">
-                    {verdict.details.width} × {verdict.details.height}
+                    {verdict.severity || "N/A"}
                   </Text>
                 </View>
 
-                {/* Angle */}
+                {/* Impact */}
                 <View className="flex-1 bg-neutral-50 border border-neutral-200 rounded-2xl p-4 items-center justify-center">
                   <MaterialCommunityIcons
-                    name="angle-acute"
+                    name="earth"
                     size={22}
                     color="#4C1D95" // primary-main
                   />
                   <Text className="mt-1 text-sm text-primary-main font-montserrat">
-                    Angle
+                    Impact
                   </Text>
                   <Text className="mt-1 text-base text-neutral-900 font-montserratBold text-center">
-                    {verdict.details.angle}°
+                    {verdict.impact || "N/A"}
                   </Text>
                 </View>
               </View>
 
-              {/* Violations */}
+              {/* Issues */}
               <Text className="mt-5 text-xl font-montserratBold text-neutral-900 mb-2 tracking-wide">
-                Violations Detected
+                Issues Detected
               </Text>
               {Array.isArray(verdict.violations) &&
               verdict.violations.length > 0 ? (
@@ -376,7 +343,7 @@ export default function ReportSubmissionDemo() {
                     AI Verdict
                   </Text>
                   <Text className="text-lg capitalize font-montserratBold text-primary-dark">
-                    {verdict.aiAnalysis.verdict}
+                    {verdict.aiAnalysis.verdict.split("_").join(" ")}
                   </Text>
                   {!!verdict.aiAnalysis?.detectedObjects?.length && (
                     <Text className="text-xs text-neutral-500 mt-1 font-montserrat">
@@ -406,9 +373,9 @@ export default function ReportSubmissionDemo() {
                     { key: verdict.aiAnalysis.verdict, label: "Yes" },
                     {
                       key:
-                        verdict.aiAnalysis.verdict === "unauthorized"
-                          ? "authorized"
-                          : "unauthorized",
+                        verdict.aiAnalysis.verdict === "action_required"
+                          ? "action_not_required"
+                          : "action_required",
                       label: "No",
                     },
                     { key: "unsure", label: "Not Sure" },
@@ -421,8 +388,8 @@ export default function ReportSubmissionDemo() {
                           dispatch(
                             setUserOverrideVerdict(
                               opt.key as
-                                | "unauthorized"
-                                | "authorized"
+                                | "action_required"
+                                | "action_not_required"
                                 | "unsure"
                             )
                           )
@@ -456,7 +423,7 @@ export default function ReportSubmissionDemo() {
                 </Text>
                 <TextInput
                   className="bg-neutral-50 border border-neutral-200 rounded-2xl px-4 py-4 text-base text-neutral-900 min-h-[100px] font-montserrat"
-                  placeholder="Describe what’s wrong (e.g. oversized, unsafe, near school)"
+                  placeholder="Describe the issue (e.g. broken streetlight, pothole, garbage dump)"
                   placeholderTextColor="#9CA3AF"
                   multiline
                   value={issueDescription}

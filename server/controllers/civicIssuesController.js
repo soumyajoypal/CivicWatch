@@ -1,8 +1,8 @@
 const { StatusCodes } = require("http-status-codes");
-const Billboard = require("../models/billboardSchema");
+const CivicIssue = require("../models/civicIssuesSchema");
 const { BadRequest } = require("../errors");
 
-const getAllBillboards = async (req, res) => {
+const getAllCivicIssues = async (req, res) => {
   const { role } = req.user;
   if (role === "NormalUser") throw new BadRequest("Not allowed");
 
@@ -43,8 +43,8 @@ const getAllBillboards = async (req, res) => {
   const limitNum = Math.max(1, parseInt(limit, 10));
   const skip = (pageNum - 1) * limitNum;
 
-  const [billboards, total] = await Promise.all([
-    Billboard.find(query)
+  const [civicIssues, total] = await Promise.all([
+    CivicIssue.find(query)
       .populate({
         path: "reports",
         select:
@@ -54,11 +54,11 @@ const getAllBillboards = async (req, res) => {
       .sort({ "reports.submittedAt": -1 })
       .skip(skip)
       .limit(limitNum),
-    Billboard.countDocuments(query),
+    CivicIssue.countDocuments(query),
   ]);
 
-  // Format the same way as billboardFeed
-  const formatted = billboards.map((b) => {
+  // Format the same way as civicIssuesFeed
+  const formatted = civicIssues.map((b) => {
     const latestReport = b.reports[0];
 
     let communityConfidence = null;
@@ -88,12 +88,12 @@ const getAllBillboards = async (req, res) => {
       limit: limitNum,
       totalPages: Math.ceil(total / limitNum),
     },
-    message: "Billboards retrieved successfully.",
+    message: "Civic Issues retrieved successfully.",
   });
 };
 
-const billBoardFeed = async (req, res) => {
-  const feedBillboards = await Billboard.find()
+const civicIssuesFeed = async (req, res) => {
+  const feedCivicIssues = await CivicIssue.find()
     .populate({
       path: "reports",
       options: { sort: { submittedAt: -1 }, limit: 1 },
@@ -103,7 +103,7 @@ const billBoardFeed = async (req, res) => {
     .limit(5)
     .exec();
 
-  const billboardFeed = feedBillboards.map((b) => {
+  const civicIssuesFeed = feedCivicIssues.map((b) => {
     const latestReport = b.reports[0];
 
     let communityConfidence = null;
@@ -125,20 +125,20 @@ const billBoardFeed = async (req, res) => {
     };
   });
 
-  res.status(200).json({ success: true, data: billboardFeed });
+  res.status(200).json({ success: true, data: civicIssuesFeed });
 };
 
-const getBillBoardDetails = async (req, res) => {
-  const { billboardId } = req.params;
+const getCivicIssueDetails = async (req, res) => {
+  const { civicIssueId } = req.params;
 
-  if (!billboardId) {
+  if (!civicIssueId) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       success: false,
-      message: "Billboard ID is required.",
+      message: "Civic Issue ID is required.",
     });
   }
 
-  const billboard = await Billboard.findById(billboardId).populate({
+  const civicIssue = await CivicIssue.findById(civicIssueId).populate({
     path: "reports",
     select:
       "reportedBy submittedAt status xpAwarded upvotes downvotes aiAnalysis imageURL annotatedImageURL communityTrustScore",
@@ -149,18 +149,18 @@ const getBillBoardDetails = async (req, res) => {
   });
   // SORT BY COMMUNITY TRUST SCORE DESCENDING
 
-  if (!billboard) {
+  if (!civicIssue) {
     return res.status(StatusCodes.NOT_FOUND).json({
       success: false,
-      message: "Billboard not found.",
+      message: "Civic Issue not found.",
     });
   }
 
   return res.status(StatusCodes.OK).json({
     success: true,
-    data: billboard,
-    message: "Billboard retrieved successfully.",
+    data: civicIssue,
+    message: "Civic Issue retrieved successfully.",
   });
 };
 
-module.exports = { getAllBillboards, billBoardFeed, getBillBoardDetails };
+module.exports = { getAllCivicIssues, civicIssuesFeed, getCivicIssueDetails };

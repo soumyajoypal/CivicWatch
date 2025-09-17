@@ -1,4 +1,4 @@
-import { fetchBillboard, voteReport } from "@/lib/Slices/billBoardSlice";
+import { fetchBillboard, voteReport } from "@/lib/Slices/civicIssueSlice";
 import { AppDispatch, RootState } from "@/store/store";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";

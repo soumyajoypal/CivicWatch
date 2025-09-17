@@ -7,7 +7,7 @@ const errorHandler = require("./middleware/errorHandler");
 const cors = require("cors");
 const aiModelRouter = require("./routes/aiModelRouter");
 const reportRouter = require("./routes/reportRouter");
-const billBoardRouter = require("./routes/billBoardRouter");
+const civicIssueRouter = require("./routes/civicIssueRouter");
 
 const app = express();
 app.use(express.json());
@@ -21,7 +21,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/model", aiModelRouter);
 app.use("/api/report", reportRouter);
-app.use("/api/billboard", billBoardRouter);
+app.use("/api/civic-issues", civicIssueRouter);
 app.use(errorHandler);
 const port = process.env.PORT || 3000;
 

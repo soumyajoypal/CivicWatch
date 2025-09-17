@@ -35,20 +35,23 @@ const Reports = () => {
   const STATUS_OPTIONS = [
     { label: "All Status", value: "" },
     { label: "Pending", value: "pending" },
-    { label: "Resolved", value: "resolved" },
+    { label: "Resolved", value: "verified_issue" },
     { label: "Rejected", value: "rejected" },
   ];
-  const VIOLATION_OPTIONS = [
-    { label: "All Violation Types", value: "" },
-    { label: "Size Violation", value: "size_violation" },
-    { label: "Unauthorized", value: "unauthorized" },
+  const ISSUE_OPTIONS = [
+    { label: "All Issue Types", value: "" },
+    { label: "Potholes", value: "potholes" },
+    { label: "Garbage / Waste", value: "garbage" },
+    { label: "Streetlight Outage", value: "streetlight" },
+    { label: "Water Logging", value: "water_logging" },
+    { label: "Illegal Parking", value: "illegal_parking" },
+    { label: "Noise Pollution", value: "noise_pollution" },
     { label: "Other", value: "other" },
   ];
-
   const VERDICT_OPTIONS = [
     { label: "All Verdicts", value: "" },
-    { label: "Authorized", value: "authorized" },
-    { label: "Unauthorized", value: "unauthorized" },
+    { label: "Verified", value: "verified_issue" },
+    { label: "Unverified", value: "pending" },
     { label: "Unsure", value: "unsure" },
   ];
 
@@ -143,7 +146,7 @@ const Reports = () => {
 
   const [filters, setFilters] = useState({
     status: "",
-    violationType: "",
+    issueType: "",
     verdict: "",
     page: 1,
     limit: 10,
@@ -176,7 +179,7 @@ const Reports = () => {
       data = await dispatch(
         getAllReports({
           status: filters.status,
-          violationType: filters.violationType,
+          issueType: filters.issueType,
           verdict: filters.verdict,
           page: filters.page,
           limit: filters.limit,
@@ -186,7 +189,7 @@ const Reports = () => {
       data = await dispatch(
         getReportsByUser({
           status: filters.status,
-          violationType: filters.violationType,
+          issueType: filters.issueType,
           verdict: filters.verdict,
           page: filters.page,
           limit: filters.limit,
@@ -224,7 +227,9 @@ const Reports = () => {
           ? { bg: "#FEE2E2", border: "#EF4444", text: "#B91C1C" } // error (soft)
           : { bg: "#DCFCE7", border: "#16A34A", text: "#166534" }; // success (soft)
 
-    const verdict = (item.aiAnalysis?.verdict || "N/A").toUpperCase();
+    const verdict = (
+      item.aiAnalysis?.verdict.split("_").join(" ") || "N/A"
+    ).toUpperCase();
     const thumb = item.annotatedURL || item.imageURL; // use AI image first
 
     return (
@@ -322,8 +327,8 @@ const Reports = () => {
 
             {/* Issues list */}
             <View className="mt-1 flex-row flex-wrap gap-2">
-              {item.violationType?.length ? (
-                item.violationType.map((issue: string, idx: number) => {
+              {item.issueType?.length ? (
+                item.issueType.map((issue: string, idx: number) => {
                   // format: "size_violation" -> "Size violation"
                   const formatted = issue
                     .replace(/_/g, " ") // replace underscores with spaces
@@ -542,7 +547,7 @@ const Reports = () => {
                 activeOpacity={0.8}
               >
                 <Text className="font-montserrat" style={{ color: "#1F2937" }}>
-                  {getLabel(VIOLATION_OPTIONS, tempFilters.violationType)}
+                  {getLabel(ISSUE_OPTIONS, tempFilters.issueType)}
                 </Text>
                 <Ionicons
                   name={
@@ -561,15 +566,15 @@ const Reports = () => {
                     transition={{ type: "timing", duration: 220 }}
                     style={{ overflow: "hidden", backgroundColor: "#FFFFFF" }}
                   >
-                    {VIOLATION_OPTIONS.map((opt) => (
+                    {ISSUE_OPTIONS.map((opt) => (
                       <TouchableOpacity
                         key={opt.value}
                         className="px-3 py-2 flex-row items-center justify-between"
                         onPress={() => {
-                          // ✅ FIX: update violationType (not status)
+                          // ✅ FIX: update issueType (not status)
                           setTempFilters((f) => ({
                             ...f,
-                            violationType: opt.value,
+                            issueType: opt.value,
                           }));
                           setOpenKey(null);
                         }}
@@ -578,14 +583,14 @@ const Reports = () => {
                           className="font-montserrat"
                           style={{
                             color:
-                              tempFilters.violationType === opt.value
+                              tempFilters.issueType === opt.value
                                 ? "#6C4FE0" // highlight active with brand purple
                                 : "#1F2937",
                           }}
                         >
                           {opt.label}
                         </Text>
-                        {tempFilters.violationType === opt.value && (
+                        {tempFilters.issueType === opt.value && (
                           <Ionicons
                             name="checkmark"
                             size={16}
@@ -684,7 +689,7 @@ const Reports = () => {
                 onPress={() =>
                   setTempFilters({
                     status: "",
-                    violationType: "",
+                    issueType: "",
                     verdict: "",
                     page: 1,
                     limit: 10,

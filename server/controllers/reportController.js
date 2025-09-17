@@ -1,22 +1,20 @@
 const Report = require("../models/reportSchema");
 const { StatusCodes } = require("http-status-codes");
 const { BadRequest } = require("../errors/index");
-const { link } = require("../routes/authRouter");
-const User = require("../models/userSchema");
 const AdminUser = require("../models/rolesSchema").AdminUser;
 const NormalUser = require("../models/rolesSchema").NormalUser;
 const { default: axios } = require("axios");
 const checkAndAwardBadges = require("../utils/awardBadges");
 const calculateXP = require("../utils/calculateXP");
-const { handleBillboardCreation } = require("../utils/billBoardCreation");
-const Billboard = require("../models/billboardSchema");
+const CivicIssue = require("../models/civicIssuesSchema");
 const recalculateCrowdConfidence = require("../utils/scoring");
+const handleCivicIssueCreation = require("../utils/civicIssueCreation");
 
 // Admin can get all reports
 const getAllReports = async (req, res) => {
   const { role } = req.user;
   const {
-    violationType,
+    issueType,
     status,
     startDate,
     endDate,
@@ -29,7 +27,7 @@ const getAllReports = async (req, res) => {
   // Restrict filters for NormalUser
   if (
     role === "NormalUser" &&
-    (violationType || status || startDate || endDate || verdict || location)
+    (issueType || status || startDate || endDate || verdict || location)
   ) {
     throw new BadRequest("Normal users cannot filter reports.");
   }
@@ -38,7 +36,7 @@ const getAllReports = async (req, res) => {
 
   // Apply filters only for Admin/Other roles
   if (role !== "NormalUser") {
-    if (violationType) query.violationType = violationType;
+    if (issueType) query.issueType = issueType;
     if (status) query.status = status;
     if (verdict) query["aiAnalysis.verdict"] = verdict;
     if (location) query.location = location;
@@ -85,7 +83,7 @@ const createReport = async (req, res) => {
     issueDescription,
     imageURL,
     annotatedURL,
-    violationType,
+    issueType,
     location,
     ...extraFields
   } = req.body;
@@ -108,7 +106,7 @@ const createReport = async (req, res) => {
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
     const loc = await axios.get(url, {
-      headers: { "User-Agent": "Billguard-Hackathon/2.0" },
+      headers: { "User-Agent": "CivicWatch-Hackathon/2.0" },
     });
     newLocation.address = loc.data.display_name || "N/A";
     newLocation.zoneId = loc.data.osm_id || "N/A";
@@ -121,7 +119,7 @@ const createReport = async (req, res) => {
     issueDescription,
     imageURL,
     annotatedURL,
-    violationType,
+    issueType,
     location: newLocation,
   };
 
@@ -143,7 +141,7 @@ const createReport = async (req, res) => {
     issueDescription: issueDescription.trim(),
     imageURL: imageURL.trim(),
     annotatedURL: annotatedURL.trim(),
-    violationType,
+    issueType,
     location: newLocation,
     reportedBy: id,
     ...extraFields,
@@ -151,8 +149,8 @@ const createReport = async (req, res) => {
 
   const report = await Report.create(sanitizedReport);
   await NormalUser.findByIdAndUpdate(id, { $inc: { reportsSubmitted: 1 } });
-  const billboard = await handleBillboardCreation(report);
-  report.billboard = billboard._id;
+  const civicIssue = await handleCivicIssueCreation(report);
+  report.civicIssue = civicIssue._id;
   await report.save();
   return res.status(StatusCodes.CREATED).json({
     data: report,
@@ -182,13 +180,13 @@ const updateReport = async (req, res) => {
 
   const oldStatus = report.status;
 
-  // Fetch linked billboard
-  const billboard = await Billboard.findOne({ reports: report._id }).populate(
+  // Fetch linked civic issue
+  const civicIssue = await CivicIssue.findOne({ reports: report._id }).populate(
     "reports"
   );
-  if (!billboard) {
+  if (!civicIssue) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: "Linked billboard not found for this report.",
+      message: "Linked civic issue not found for this report.",
     });
   }
 
@@ -203,9 +201,9 @@ const updateReport = async (req, res) => {
     fields.reviewedAt = new Date();
     if (fields.adminNotes) fields.adminNotes = fields.adminNotes.trim();
 
-    // Update all reports linked to this billboard
+    // Update all reports linked to this civic issue
     await Report.updateMany(
-      { _id: { $in: billboard.reports } },
+      { _id: { $in: civicIssue.reports } },
       {
         $set: {
           status: fields.status,
@@ -218,7 +216,7 @@ const updateReport = async (req, res) => {
 
     // Award XP for all users linked to these reports
     const reportsSorted = await Report.find({
-      _id: { $in: billboard.reports },
+      _id: { $in: civicIssue.reports },
     }).sort({ submittedAt: 1 });
     for (let i = 0; i < reportsSorted.length; i++) {
       const rDoc = reportsSorted[i];
@@ -228,9 +226,7 @@ const updateReport = async (req, res) => {
       else if (i === 1) multiplier = 0.7;
       else if (i === 2) multiplier = 0.5;
 
-      const baseXP = ["verified_unauthorized", "verified_authorized"].includes(
-        fields.status
-      )
+      const baseXP = ["verified_issue"].includes(fields.status)
         ? calculateXP(rDoc)
         : 0;
       const newXP = Math.round(baseXP * multiplier);
@@ -246,22 +242,21 @@ const updateReport = async (req, res) => {
       }
     }
 
-    // Update billboard verification status
-    billboard.verifiedStatus = fields.status;
-    billboard.verifiedBy = id;
-    billboard.verifiedAt = new Date();
-    await billboard.save();
+    // Update civic issue verification status
+    civicIssue.verifiedStatus = fields.status;
+    civicIssue.verifiedBy = id;
+    civicIssue.verifiedAt = new Date();
+    await civicIssue.save();
 
-    billboard.crowdConfidence = await recalculateCrowdConfidence(billboard._id);
-    await billboard.save();
+    civicIssue.crowdConfidence = await recalculateCrowdConfidence(
+      civicIssue._id
+    );
+    await civicIssue.save();
 
     // Update admin stats
-    if (
-      fields.status === "verified_unauthorized" ||
-      fields.status === "verified_authorized"
-    ) {
+    if (fields.status === "verified_issue") {
       await AdminUser.findByIdAndUpdate(id, { $inc: { verifiedReports: 1 } });
-      for (const rId of billboard.reports) {
+      for (const rId of civicIssue.reports) {
         const rDoc = await Report.findById(rId);
         if (rDoc)
           await NormalUser.findByIdAndUpdate(rDoc.reportedBy, {
@@ -301,7 +296,7 @@ const getReportsByUser = async (req, res) => {
     throw new Unauthorized("You can only fetch your own reports.");
   }
   const {
-    violationType,
+    issueType,
     status,
     startDate,
     verdict,
@@ -312,8 +307,8 @@ const getReportsByUser = async (req, res) => {
 
   const query = { reportedBy: userId };
 
-  if (violationType) {
-    query.violationType = violationType;
+  if (issueType) {
+    query.issueType = issueType;
   }
 
   if (status) {
@@ -391,7 +386,7 @@ const voteReport = async (req, res) => {
       return res.status(401).json({ message: "User not authenticated" });
     }
 
-    const report = await Report.findById(reportId).populate("billboard");
+    const report = await Report.findById(reportId).populate("civicIssue");
     if (!report) {
       return res.status(404).json({ message: "Report not found" });
     }
@@ -435,22 +430,22 @@ const voteReport = async (req, res) => {
 
     await report.save();
 
-    // Recalculate billboard crowd confidence
-    if (report.billboard?._id) {
-      report.billboard.crowdConfidence = await recalculateCrowdConfidence(
-        report.billboard._id
+    // Recalculate civic issue crowd confidence
+    if (report.civicIssue?._id) {
+      report.civicIssue.crowdConfidence = await recalculateCrowdConfidence(
+        report.civicIssue._id
       );
-      await report.billboard.save();
+      await report.civicIssue.save();
 
       return res.status(200).json({
         message: "Vote recorded",
         data: report,
-        billboardConfidence: report.billboard.crowdConfidence,
+        civicIssueConfidence: report.civicIssue.crowdConfidence,
       });
     }
 
     return res.status(200).json({
-      message: "Vote recorded, but billboard not linked",
+      message: "Vote recorded, but civic issue not linked",
       data: report,
     });
   } catch (err) {

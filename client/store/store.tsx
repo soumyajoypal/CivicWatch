@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-import billboardReducer from "../lib/Slices/billBoardSlice";
+import civicReducer from "../lib/Slices/civicIssueSlice";
 import leaderBoardReducer from "../lib/Slices/leaderBoardSlice";
 import locationReducer from "../lib/Slices/locationSlice";
 import reportReducer from "../lib/Slices/reportSlice";
@@ -11,7 +11,7 @@ export const store = configureStore({
     location: locationReducer,
     report: reportReducer,
     leaderBoard: leaderBoardReducer,
-    billboard: billboardReducer,
+    civicIssue: civicReducer,
   },
 });
 

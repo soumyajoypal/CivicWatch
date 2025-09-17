@@ -1,15 +1,17 @@
-const Billboard = require("../models/billboardSchema");
+const CivicIssue = require("../models/civicIssuesSchema");
 
-const recalculateCrowdConfidence = async (billboardId) => {
-  const billboard = await Billboard.findById(billboardId).populate("reports");
+const recalculateCrowdConfidence = async (civicIssueId) => {
+  const civicIssue = await CivicIssue.findById(civicIssueId).populate(
+    "reports"
+  );
 
-  if (!billboard) return null;
+  if (!civicIssue) return null;
 
-  const allReports = billboard.reports || [];
+  const allReports = civicIssue.reports || [];
   if (allReports.length === 0) {
-    billboard.crowdConfidence = 0;
-    await billboard.save();
-    return billboard;
+    civicIssue.crowdConfidence = 0;
+    await civicIssue.save();
+    return civicIssue;
   }
 
   let totalConfidence = 0;
@@ -17,7 +19,7 @@ const recalculateCrowdConfidence = async (billboardId) => {
   allReports.forEach((r) => {
     let baseConf = r.aiAnalysis?.confidence ?? 80;
 
-    if (["verified_unauthorized", "verified_authorized"].includes(r.status)) {
+    if (["verified_issue"].includes(r.status)) {
       baseConf = Math.min(100, baseConf + 20);
     }
 
@@ -28,10 +30,10 @@ const recalculateCrowdConfidence = async (billboardId) => {
     totalConfidence += effectiveConfidence;
   });
 
-  billboard.crowdConfidence = Math.round(totalConfidence / allReports.length);
+  civicIssue.crowdConfidence = Math.round(totalConfidence / allReports.length);
 
-  await billboard.save();
-  return billboard;
+  await civicIssue.save();
+  return civicIssue;
 };
 
 module.exports = recalculateCrowdConfidence;

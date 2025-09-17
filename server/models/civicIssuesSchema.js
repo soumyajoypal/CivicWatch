@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const billboardSchema = new mongoose.Schema({
+const civicIssuesSchema = new mongoose.Schema({
   location: {
     type: {
       type: String,
@@ -39,12 +39,7 @@ const billboardSchema = new mongoose.Schema({
 
   verifiedStatus: {
     type: String,
-    enum: [
-      "pending",
-      "verified_unauthorized",
-      "verified_authorized",
-      "rejected",
-    ],
+    enum: ["pending", "verified_issue", "rejected"],
     default: "pending",
   },
 
@@ -67,7 +62,7 @@ const billboardSchema = new mongoose.Schema({
   },
 });
 
-billboardSchema.index({ location: "2dsphere" });
+civicIssuesSchema.index({ location: "2dsphere" });
 
-const Billboard = mongoose.model("Billboard", billboardSchema);
-module.exports = Billboard;
+const CivicIssue = mongoose.model("CivicIssue", civicIssuesSchema);
+module.exports = CivicIssue;
