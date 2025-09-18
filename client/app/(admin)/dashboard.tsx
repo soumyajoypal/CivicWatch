@@ -61,17 +61,14 @@ export default function Dashboard({ role }: { role: string }) {
     const total = reports?.length || 0;
 
     const pending = reports?.filter((r) => r.status === "pending").length || 0;
-    const verified_authorized =
-      reports?.filter((r) => r.status === "verified_authorized").length || 0;
-    const verified_unauthorized =
-      reports?.filter((r) => r.status === "verified_unauthorized").length || 0;
+    const verified_issue =
+      reports?.filter((r) => r.status === "verified_issue").length || 0;
     const rejected =
       reports?.filter((r) => r.status === "rejected").length || 0;
     return {
       total,
       pending,
-      verified_authorized,
-      verified_unauthorized,
+      verified_issue,
       rejected,
     };
   }, [reports]);
@@ -86,16 +83,9 @@ export default function Dashboard({ role }: { role: string }) {
       legendFontSize: 13,
     },
     {
-      name: "Authorized",
-      count: stats.verified_authorized,
+      name: "Verified",
+      count: stats.verified_issue,
       color: "#22c55e",
-      legendFontColor: "#374151",
-      legendFontSize: 13,
-    },
-    {
-      name: "UnAuthorized",
-      count: stats.verified_unauthorized,
-      color: "#3b82f6",
       legendFontColor: "#374151",
       legendFontSize: 13,
     },
@@ -109,13 +99,12 @@ export default function Dashboard({ role }: { role: string }) {
   ];
 
   const barData = {
-    labels: ["Pending", "Authorized", "UnAuthorized", "Rejected"],
+    labels: ["Pending", "Verified", "Rejected"],
     datasets: [
       {
         data: [
           stats.pending,
-          stats.verified_authorized,
-          stats.verified_unauthorized,
+          stats.verified_issue,
           stats.rejected,
         ],
       },
@@ -212,7 +201,7 @@ export default function Dashboard({ role }: { role: string }) {
             },
             {
               label: "Resolved",
-              value: stats.verified_authorized + stats.verified_unauthorized,
+              value: stats.verified_issue,
               color: "bg-green-100 text-green-700",
             },
             {
@@ -406,34 +395,6 @@ export default function Dashboard({ role }: { role: string }) {
           </View>
         </View>
 
-        {/* Recent Reports */}
-        {/* <View className="bg-white rounded-2xl shadow-md p-5 mb-10">
-        <Text className="font-semibold text-gray-700 mb-4">Recent Reports</Text>
-        {reports?.slice(0, 5).map((r) => (
-          <TouchableOpacity
-            key={r._id}
-            className="border-b border-gray-200 pb-3 mb-3 active:opacity-70"
-            onPress={() =>
-              router.push({
-                pathname: "/reports/[reportId]",
-                params: { reportId: r._id },
-              })
-            }
-          >
-            <Text className="text-indigo-600 font-medium mb-1">
-              {r.violationType?.join(", ") || "Unknown Violation"}
-            </Text>
-            <Text className="text-sm text-gray-600 mb-1">
-              {r.issueDescription}
-            </Text>
-            <Text className="text-xs text-gray-500">
-              {new Date(r.submittedAt).toLocaleDateString()} •{" "}
-              <Text className="capitalize">{r.status}</Text>
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-       */}
         <View style={{ flex: 1 }}>
           <Text style={{ marginBottom: 10 }}>Billboard distribution</Text>
           <View style={{ flex: 1 }}>
@@ -491,7 +452,7 @@ export default function Dashboard({ role }: { role: string }) {
                         r.status === "pending"
                           ? "#FEF3C7" // yellow-100
                           : r.status === "resolved" ||
-                              r.status === "verified_unauthorized"
+                              r.status === "verified_issue"
                             ? "#DCFCE7" // green-100
                             : r.status === "verified_authorized"
                               ? "#E0E7FF" // indigo-100
@@ -500,7 +461,7 @@ export default function Dashboard({ role }: { role: string }) {
                         r.status === "pending"
                           ? "#FACC15" // yellow-400
                           : r.status === "resolved" ||
-                              r.status === "verified_unauthorized"
+                              r.status === "verified_issue"
                             ? "#22C55E" // green-500
                             : r.status === "verified_authorized"
                               ? "#6366F1" // indigo-500
@@ -532,8 +493,8 @@ export default function Dashboard({ role }: { role: string }) {
                   className="font-montserratBold text-sm mb-1"
                   style={{ color: "#1F2937" }}
                 >
-                  {r.violationType?.length
-                    ? r.violationType
+                  {r.issueType?.length
+                    ? r.issueType
                         .map((v: string) =>
                           v
                             .replace(/_/g, " ") // underscores → spaces
@@ -541,7 +502,7 @@ export default function Dashboard({ role }: { role: string }) {
                             .replace(/^\w/, (c) => c.toUpperCase())
                         )
                         .join(", ")
-                    : "Unknown Violation"}
+                    : "Unknown Issue"}
                 </Text>
 
                 <Text

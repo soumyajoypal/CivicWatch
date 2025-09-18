@@ -1,4 +1,4 @@
-import { fetchBillboard, voteReport } from "@/lib/Slices/civicIssueSlice";
+import { fetchCivicIssue, voteReport } from "@/lib/Slices/civicIssueSlice";
 import { AppDispatch, RootState } from "@/store/store";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -11,7 +11,7 @@ import { useDispatch, useSelector } from "react-redux";
 const BillBoardDetails = () => {
   const { billboardId } = useLocalSearchParams();
   const { status, error, selected } = useSelector(
-    (state: RootState) => state.billboard
+    (state: RootState) => state.civicIssue
   );
   const { user } = useSelector((state: RootState) => state.user);
   const router = useRouter();
@@ -32,10 +32,10 @@ const BillBoardDetails = () => {
   };
 
   useEffect(() => {
-    dispatch(fetchBillboard(billboardId as string));
+    dispatch(fetchCivicIssue(billboardId as string));
   }, [billboardId]);
 
-  const renderReportItem = ({ item }: { item: any }) => {
+  const renderReportItem = ({ item, index }: { item: any; index: number }) => {
     const status = (item?.status || "").toLowerCase();
     const statusStyles =
       status === "pending"
@@ -53,9 +53,9 @@ const BillBoardDetails = () => {
         : null;
     const communityTrustScore =
       typeof item.communityTrustScore === "number"
-        ? (item.communityTrustScore * 100).toFixed(2)
+        ? (item.communityTrustScore * 10).toFixed(2)
         : 0;
-    const thumb = item.annotatedImageURL || item.imageURL;
+    const thumb = item.annotatedURL || item.imageURL;
     const isUp = item.userVote === "upvote";
     const isDown = item.userVote === "downvote";
 
@@ -85,6 +85,14 @@ const BillBoardDetails = () => {
             className="w-full h-40 bg-gray-100"
             style={{ borderTopLeftRadius: 12, borderTopRightRadius: 12 }}
           />
+        )}
+
+        {index === 0 && user?.role === "AdminUser" && (
+          <View className="absolute top-3 left-3 bg-yellow-400 px-2 py-1 rounded-full">
+            <Text className="text-xs font-montserratBold text-gray-800">
+              ⭐ Most Upvoted
+            </Text>
+          </View>
         )}
 
         {/* Body */}
@@ -125,10 +133,10 @@ const BillBoardDetails = () => {
 
           {/* Verdict */}
           <Text className="text-lg font-montserratBold text-gray-900 mb-2">
-            {verdictText === "AUTHORIZED"
-              ? "Authorized"
-              : verdictText === "UNAUTHORIZED"
-                ? "Unauthorized"
+            {verdictText === "ACTION_REQUIRED"
+              ? "Action Required"
+              : verdictText === "ACTION_NOT_REQUIRED"
+                ? "No Action Required"
                 : "Unsure"}
           </Text>
 
@@ -246,11 +254,10 @@ const BillBoardDetails = () => {
                     params: { reportId: item._id },
                   });
                 }}
-                className="ml-auto"
+                className="w-9 h-9 rounded-full bg-[#6C4FE0] items-center justify-center"
+                activeOpacity={0.8}
               >
-                <Text className="text-sm font-montserrat text-gray-500 underline">
-                  View Details
-                </Text>
+                <Ionicons name="eye-outline" size={20} color="#fff" />
               </TouchableOpacity>
             )}
           </View>
@@ -288,14 +295,14 @@ const BillBoardDetails = () => {
           </TouchableOpacity>
 
           <Text className="ml-3 font-montserratBold text-xl text-white tracking-widest">
-            Billboard Details
+            Civic Issue Details
           </Text>
         </View>
       </View>
 
       <ScrollView className="mb-2">
         <View className="px-4 py-4">
-          {/* Billboard summary */}
+          {/* Civic Issue summary */}
           <View
             className="rounded-2xl mb-4 overflow-hidden"
             style={{
@@ -320,7 +327,7 @@ const BillBoardDetails = () => {
               {/* Heading */}
               <View className="mb-3">
                 <Text className="text-lg font-montserratBold text-gray-900 leading-snug">
-                  Billboard Details
+                  Civic Issue Details
                 </Text>
               </View>
 

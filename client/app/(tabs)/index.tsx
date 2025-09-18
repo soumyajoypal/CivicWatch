@@ -173,7 +173,7 @@ export default function Index() {
       {/* Billboards Section */}
       <View className="px-6 flex-1 mb-10">
         <Text className="text-xl font-montserratBold mb-3 text-text-primary mx-2">
-          Nearby Billboard Reports
+          Nearby Civic Issue Reports
         </Text>
 
         {status === "loading" && (
@@ -182,7 +182,7 @@ export default function Index() {
 
         {status === "failed" && (
           <Text className="text-red-500 font-montserrat text-center mt-5">
-            {error ? String(error) : "Failed to load billboards."}
+            {error ? String(error) : "Failed to load civic issue reports."}
           </Text>
         )}
 
@@ -223,7 +223,7 @@ export default function Index() {
                         numberOfLines={1}
                         ellipsizeMode="tail"
                       >
-                        Billboard #{item.id.slice(-6)}
+                        Civic Issue #{item.id.slice(-6)}
                       </Text>
 
                       {/* Address — trimmed till the 2nd comma */}

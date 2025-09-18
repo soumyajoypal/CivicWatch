@@ -1,4 +1,4 @@
-import { getAllBillboards } from "@/lib/Slices/civicIssueSlice";
+import { getAllCivicIssues } from "@/lib/Slices/civicIssueSlice";
 import { AppDispatch, RootState } from "@/store/store";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
@@ -82,8 +82,8 @@ const Billboards = () => {
 
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const { billboards, status, error } = useSelector(
-    (state: RootState) => state.billboard
+  const { issues, status, error } = useSelector(
+    (state: RootState) => state.civicIssue
   );
 
   const [filters, setFilters] = useState({
@@ -116,7 +116,7 @@ const Billboards = () => {
 
   const fetchBillboards = async () => {
     await dispatch(
-      getAllBillboards({
+      getAllCivicIssues({
         ...filters,
         minConfidence:
           filters.minConfidence === ""
@@ -142,56 +142,104 @@ const Billboards = () => {
 
   const renderBillboardItem = ({ item }: { item: any }) => {
     const crowdConfidence = item.crowdConfidence
-      ? item.crowdConfidence.toFixed(1)
+      ? `${item.crowdConfidence.toFixed(1)}%`
       : "N/A";
-    const location = item.location?.address || "Unknown Location";
-    const verifiedStatus = item.verifiedStatus ?? "N/A";
-    const thumb =
-      item.imageURL || "https://via.placeholder.com/150?text=No+Image";
+    const addressShort = item.location?.address
+      ? item.location.address.split(",").slice(0, 2).join(",").trim()
+      : "Unknown Location";
 
     return (
-      <View className="border border-2 border-border flex-row justify-between items-center bg-surface rounded-xl px-3 py-3 mb-4 mx-2 shadow-md shadow-primary-main">
-        {/* Left section */}
-        <View className="flex-1 mr-3">
-          <Text className="font-montserratBold text-text-primary">
-            Billboard #{item.id.slice(-6)}
-          </Text>
-          <Text className="font-montserrat text-text-secondary text-sm">
-            {location}
-          </Text>
-          <Text className="font-montserrat text-text-secondary text-xs mt-1">
-            Crowd Confidence:{" "}
-            <Text className="text-primary-main font-montserratBold">
-              {crowdConfidence}%
-            </Text>
-          </Text>
-          <Text className="font-montserrat text-text-secondary text-xs mt-1">
-            Status:{" "}
-            <Text className="text-primary-main font-montserratBold">
-              {verifiedStatus}
-            </Text>
-          </Text>
-        </View>
-
-        {/* Image */}
-        <Image
-          source={{ uri: thumb }}
-          className="w-16 h-16 rounded-lg border border-border mr-3"
-        />
-
-        {/* CTA */}
-        <TouchableOpacity
-          onPress={() =>
-            router.push({
-              pathname: "/billboards/[billboardId]",
-              params: { billboardId: item.id },
-            })
-          }
+      <View className="mb-4 mx-2">
+        <View
+          className="flex-row bg-white rounded-xl border border-border overflow-hidden"
+          style={{
+            shadowColor: "#1A1D23",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.06,
+            shadowRadius: 16,
+            elevation: 4,
+          }}
         >
-          <Text className="text-primary-main font-montserratBold">
-            View Details
-          </Text>
-        </TouchableOpacity>
+          {/* IMAGE (left-aligned small thumbnail) */}
+          <Image
+            source={{
+              uri:
+                item.imageURL ||
+                "https://res.cloudinary.com/dzjbxojvu/image/upload/v1757409898/UserUploads/user-upload-1757409894900.jpg",
+            }}
+            className="w-32"
+            style={{ height: "100%", resizeMode: "cover" }}
+            accessibilityLabel={`Image for billboard ${String(item.id).slice(
+              -6
+            )}`}
+          />
+
+          {/* RIGHT: textual content */}
+          <View className="flex-1 px-4 py-3 justify-between">
+            <View>
+              <Text
+                className="font-montserratBold text-text-primary text-base"
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                Civic Issue #{String(item.id).slice(-6)}
+              </Text>
+
+              <Text
+                className="text-[12px] font-montserratBold mt-1"
+                style={{ color: "#4C1D95" }}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {addressShort}
+              </Text>
+
+              <View className="flex-row items-center mt-1">
+                <Text className="text-xs font-montserrat text-text-secondary">
+                  Crowd Confidence:
+                </Text>
+                <Text className="text-xs font-montserratBold text-primary-main ml-1">
+                  {crowdConfidence}
+                </Text>
+              </View>
+
+              {/* Status + CTA row */}
+              <View className="flex-row items-center mt-2 justify-between">
+                {/* Status pill */}
+                <View
+                  className="px-2 py-1 rounded-full"
+                  style={{
+                    backgroundColor: "#F5F7FB",
+                    borderWidth: 1,
+                    borderColor: "#E6EAF0",
+                  }}
+                >
+                  <Text className="text-xs font-montserratBold text-primary-main">
+                    {item.verifiedStatus ?? "N/A"}
+                  </Text>
+                </View>
+
+                {/* CTA button */}
+                <TouchableOpacity
+                  onPress={() =>
+                    router.push({
+                      pathname: "/billboards/[billboardId]",
+                      params: { billboardId: item.id },
+                    })
+                  }
+                  activeOpacity={0.8}
+                  className="ml-2 flex-row items-center"
+                >
+                  <Ionicons
+                    name="arrow-forward-circle-outline"
+                    size={28}
+                    color="#6C4FE0"
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
       </View>
     );
   };
@@ -205,7 +253,7 @@ const Billboards = () => {
       >
         <View className="flex-row items-center justify-between">
           <Text className="font-montserratBold text-xl text-white tracking-widest">
-            All Billboards
+            All Civic Issues
           </Text>
 
           <TouchableOpacity
@@ -230,8 +278,8 @@ const Billboards = () => {
             transition={{ type: "spring", damping: 12, stiffness: 200 }}
             className="absolute right-4 top-20 w-72 rounded-2xl border px-4 py-3 z-50"
             style={{
-              backgroundColor: "#FFFFFF",
-              borderColor: "#E5E7EB",
+              backgroundColor: "#FFFFFF", // surface
+              borderColor: "#E5E7EB", // border
               borderWidth: 1,
               shadowColor: "#000",
               shadowOpacity: 0.08,
@@ -239,8 +287,28 @@ const Billboards = () => {
               shadowOffset: { width: 0, height: 4 },
             }}
           >
+            {/* Header */}
+            <View
+              className="pb-2 border-b mb-3"
+              style={{ borderColor: "#E5E7EB" }}
+            >
+              <Text
+                className="font-montserratBold text-lg"
+                style={{ color: "#1F2937" }}
+              >
+                Filters
+              </Text>
+            </View>
+
             {/* STATUS row */}
-            <View className="mb-2 rounded-xl overflow-hidden">
+            <View
+              className="mb-2 rounded-xl overflow-hidden"
+              style={{
+                borderWidth: 1,
+                borderColor: "#E5E7EB",
+                backgroundColor: "#F9FAFB", // subtle bg
+              }}
+            >
               <TouchableOpacity
                 className="flex-row items-center justify-between px-3 py-3"
                 onPress={() =>
@@ -248,24 +316,55 @@ const Billboards = () => {
                 }
                 activeOpacity={0.8}
               >
-                <Text>{getLabel(STATUS_OPTIONS, tempFilters.status)}</Text>
+                <Text className="font-montserrat" style={{ color: "#1F2937" }}>
+                  {getLabel(STATUS_OPTIONS, tempFilters.status)}
+                </Text>
                 <Ionicons
                   name={openKey === "status" ? "chevron-up" : "chevron-down"}
                   size={18}
+                  color="#6B7280"
                 />
               </TouchableOpacity>
+
               <AnimatePresence>
                 {openKey === "status" && (
-                  <MotiView>
+                  <MotiView
+                    key="status-options"
+                    from={{ opacity: 0, translateY: -8, scaleY: 0.95 }}
+                    animate={{ opacity: 1, translateY: 0, scaleY: 1 }}
+                    transition={{ type: "timing", duration: 220 }}
+                    style={{
+                      overflow: "hidden",
+                      backgroundColor: "#FFFFFF",
+                    }}
+                  >
                     {STATUS_OPTIONS.map((opt) => (
                       <TouchableOpacity
                         key={opt.value}
+                        className="px-3 py-2 flex-row items-center justify-between"
                         onPress={() => {
                           setTempFilters((f) => ({ ...f, status: opt.value }));
                           setOpenKey(null);
                         }}
                       >
-                        <Text>{opt.label}</Text>
+                        <Text
+                          className="font-montserrat"
+                          style={{
+                            color:
+                              tempFilters.status === opt.value
+                                ? "#6C4FE0"
+                                : "#1F2937",
+                          }}
+                        >
+                          {opt.label}
+                        </Text>
+                        {tempFilters.status === opt.value && (
+                          <Ionicons
+                            name="checkmark"
+                            size={16}
+                            color="#6C4FE0"
+                          />
+                        )}
                       </TouchableOpacity>
                     ))}
                   </MotiView>
@@ -274,8 +373,14 @@ const Billboards = () => {
             </View>
 
             {/* Buttons */}
-            <View className="flex-row justify-end gap-2">
+            <View className="flex-row justify-end gap-2 mt-4">
               <TouchableOpacity
+                className="rounded-xl px-3 py-2"
+                style={{
+                  borderColor: "#E5E7EB",
+                  borderWidth: 1,
+                  backgroundColor: "#F9FAFB",
+                }}
                 onPress={() =>
                   setTempFilters({
                     status: "",
@@ -287,16 +392,25 @@ const Billboards = () => {
                   })
                 }
               >
-                <Text>Reset</Text>
+                <Text className="font-montserrat" style={{ color: "black" }}>
+                  Reset
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
+                className="rounded-xl px-4 py-2"
+                style={{ backgroundColor: "#6C4FE0" }}
                 onPress={() => {
                   setFilters(tempFilters);
                   setMenuVisible(false);
                 }}
               >
-                <Text>Apply</Text>
+                <Text
+                  className="font-montserratBold"
+                  style={{ color: "#FFFFFF" }}
+                >
+                  Apply
+                </Text>
               </TouchableOpacity>
             </View>
           </MotiView>
@@ -312,14 +426,14 @@ const Billboards = () => {
         </ScrollView>
       ) : (
         <SafeAreaView edges={["bottom"]} style={{ flex: 1 }}>
-          <ScrollView className="mb-10 mt-2 mx-6">
-            {billboards.length === 0 ? (
+          <ScrollView className="my-8 mx-6">
+            {issues.length === 0 ? (
               <Text className="mt-5 text-center text-sm text-neutral-500">
-                No billboards found.
+                No civic issues found.
               </Text>
             ) : (
               <FlatList
-                data={billboards}
+                data={issues}
                 renderItem={renderBillboardItem}
                 keyExtractor={(item) =>
                   item.id?.toString() ?? Math.random().toString()
@@ -329,35 +443,64 @@ const Billboards = () => {
             )}
 
             {/* Pagination */}
-            {billboards.length > 0 && (
-              <View className="mt-2 mb-2 px-2 flex-row items-center justify-center gap-3">
-                <TouchableOpacity
-                  disabled={filters.page === 1}
-                  onPress={() =>
-                    setFilters((f) => ({ ...f, page: Math.max(1, f.page - 1) }))
-                  }
-                >
-                  <Ionicons
-                    name="chevron-back"
-                    size={18}
-                    color={filters.page === 1 ? "#9CA3AF" : "#000"}
-                  />
-                </TouchableOpacity>
-                <Text>Page {filters.page}</Text>
-                <TouchableOpacity
-                  disabled={billboards.length < filters.limit}
-                  onPress={() =>
-                    setFilters((f) => ({ ...f, page: f.page + 1 }))
-                  }
-                >
-                  <Ionicons
-                    name="chevron-forward"
-                    size={18}
-                    color={
-                      billboards.length < filters.limit ? "#9CA3AF" : "#000"
+            {issues.length > 0 && (
+              <View className="mt-2 mb-2 px-2">
+                <View className="flex-row items-center justify-center gap-3">
+                  {/* Prev */}
+                  <TouchableOpacity
+                    disabled={filters.page === 1}
+                    onPress={() =>
+                      setFilters((f) => ({
+                        ...f,
+                        page: Math.max(1, f.page - 1),
+                      }))
                     }
-                  />
-                </TouchableOpacity>
+                    className={[
+                      "w-10 h-10 rounded-full items-center justify-center border",
+                      filters.page === 1
+                        ? "bg-white border-border"
+                        : "bg-primary-main border-primary-main",
+                    ].join(" ")}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons
+                      name="chevron-back"
+                      size={18}
+                      color={filters.page === 1 ? "#9CA3AF" : "#FFFFFF"}
+                    />
+                  </TouchableOpacity>
+
+                  {/* Page indicator */}
+                  <Text className="font-montserrat text-sm text-text-secondary">
+                    Page{" "}
+                    <Text className="font-montserratBold text-text-secondary">
+                      {filters.page}
+                    </Text>
+                  </Text>
+
+                  {/* Next */}
+                  <TouchableOpacity
+                    disabled={issues.length < filters.limit}
+                    onPress={() =>
+                      setFilters((f) => ({ ...f, page: f.page + 1 }))
+                    }
+                    className={[
+                      "w-10 h-10 rounded-full items-center justify-center border",
+                      issues.length < filters.limit
+                        ? "bg-white border-border"
+                        : "bg-primary-main border-primary-main",
+                    ].join(" ")}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color={
+                        issues.length < filters.limit ? "#9CA3AF" : "#FFFFFF"
+                      }
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
           </ScrollView>

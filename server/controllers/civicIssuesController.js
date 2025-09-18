@@ -130,6 +130,7 @@ const civicIssuesFeed = async (req, res) => {
 
 const getCivicIssueDetails = async (req, res) => {
   const { civicIssueId } = req.params;
+  const { role } = req.user;
 
   if (!civicIssueId) {
     return res.status(StatusCodes.BAD_REQUEST).json({
@@ -138,10 +139,10 @@ const getCivicIssueDetails = async (req, res) => {
     });
   }
 
-  const civicIssue = await CivicIssue.findById(civicIssueId).populate({
+  let civicIssue = await CivicIssue.findById(civicIssueId).populate({
     path: "reports",
     select:
-      "reportedBy submittedAt status xpAwarded upvotes downvotes aiAnalysis imageURL annotatedImageURL communityTrustScore",
+      "reportedBy submittedAt status xpAwarded upvotes downvotes aiAnalysis imageURL annotatedURL communityTrustScore",
     populate: {
       path: "reportedBy",
       select: "username email",
@@ -153,6 +154,16 @@ const getCivicIssueDetails = async (req, res) => {
     return res.status(StatusCodes.NOT_FOUND).json({
       success: false,
       message: "Civic Issue not found.",
+    });
+  }
+
+  if (role === "AdminUser" && civicIssue.reports?.length > 0) {
+    civicIssue = civicIssue.toObject();
+
+    civicIssue.reports.sort((a, b) => {
+      const upA = Array.isArray(a.upvotes) ? a.upvotes.length : 0;
+      const upB = Array.isArray(b.upvotes) ? b.upvotes.length : 0;
+      return upB - upA;
     });
   }
 

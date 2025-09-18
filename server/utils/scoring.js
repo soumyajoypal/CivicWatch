@@ -30,10 +30,10 @@ const recalculateCrowdConfidence = async (civicIssueId) => {
     totalConfidence += effectiveConfidence;
   });
 
-  civicIssue.crowdConfidence = Math.round(totalConfidence / allReports.length);
-
+  const finalConfidence = Math.round(totalConfidence / allReports.length);
+  civicIssue.crowdConfidence = finalConfidence;
   await civicIssue.save();
-  return civicIssue;
+  return finalConfidence;
 };
 
 module.exports = recalculateCrowdConfidence;

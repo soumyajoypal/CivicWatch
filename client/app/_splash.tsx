@@ -5,7 +5,7 @@ export default function Splash() {
     <View style={styles.container}>
       {/* Replace text with logo */}
       <Image
-        source={require("../assets/images/billguardLogo.png")}
+        source={require("../assets/images/CITYGUARD.png")}
         style={styles.logo}
         resizeMode="contain"
       />

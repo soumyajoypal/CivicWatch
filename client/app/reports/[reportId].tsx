@@ -39,8 +39,7 @@ const ReportDetails = () => {
   const dispatch = useDispatch<AppDispatch>();
   const STATUS_OPTIONS = [
     { label: "Pending", value: "pending" },
-    { label: "Verified Unauthorized", value: "verified_unauthorized" },
-    { label: "Verified Authorized", value: "verified_authorized" },
+    { label: "Verified Issue", value: "verified_issue" },
     { label: "Rejected", value: "rejected" },
   ];
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -55,10 +54,7 @@ const ReportDetails = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setReport(res.data.data);
-      if (
-        status === "verified_authorized" ||
-        status === "verified_unauthorized"
-      ) {
+      if (status === "verified_issue") {
         dispatch(increaseVerifiedReports());
       } else if (status === "rejected") {
         dispatch(increaseRejectedReports());

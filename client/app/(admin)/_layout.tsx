@@ -60,7 +60,7 @@ const _layout = () => {
         options={{
           tabBarIcon: ({ color, size, focused }) => (
             <AdminTabIcon
-              name="document-text-outline"
+              name="warning-outline"
               color={color}
               size={size}
               focused={focused}

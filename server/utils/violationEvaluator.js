@@ -14,7 +14,7 @@ const evaluateCivicIssues = async (detections = [], gps) => {
   const detectedObjects = [];
 
   for (const det of detections) {
-    if (det.confidence > 0.5) {
+    if (det.confidence > 0.1) {
       violationCodes.push(det.class_name);
       const mappedObj = objectMap[det.class_name];
       if (mappedObj && !detectedObjects.includes(mappedObj)) {
@@ -38,10 +38,14 @@ const evaluateCivicIssues = async (detections = [], gps) => {
 
   if (violationCodes.length > 0) {
     verdict = "action_required";
-    confidence = Math.max(...detections.map((d) => d.confidence), 0.9);
+    const avgConf =
+      detections.reduce((sum, d) => sum + d.confidence, 0) / detections.length;
+    const multiplier = Math.min(1, 0.8 + detections.length * 0.05);
+
+    confidence = Math.min(1, avgConf * multiplier);
   } else if (detections.length === 0) {
     verdict = "action_not_required";
-    confidence = 0.9;
+    confidence = 0.6 + Math.random() * 0.2;
   }
 
   return {

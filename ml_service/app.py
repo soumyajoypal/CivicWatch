@@ -35,7 +35,7 @@ CLASS_COLORS = {
     2: (255, 255, 0),    # cyan for illegal dumping
     3: (255, 0, 255),    # magenta for overflowing bin
     4: (0, 165, 255),    # orange for potholes
-    5: (255, 255, 255)   # white for waterlogging
+    5: (0, 165, 255)     # orange for waterlogging
 }
 
 class ImageURLRequest(BaseModel):

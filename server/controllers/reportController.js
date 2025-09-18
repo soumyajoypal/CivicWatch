@@ -201,7 +201,6 @@ const updateReport = async (req, res) => {
     fields.reviewedAt = new Date();
     if (fields.adminNotes) fields.adminNotes = fields.adminNotes.trim();
 
-    // Update all reports linked to this civic issue
     await Report.updateMany(
       { _id: { $in: civicIssue.reports } },
       {
@@ -252,8 +251,8 @@ const updateReport = async (req, res) => {
       civicIssue._id
     );
     await civicIssue.save();
+    console.log("Civic issue crowd confidence recalculated.");
 
-    // Update admin stats
     if (fields.status === "verified_issue") {
       await AdminUser.findByIdAndUpdate(id, { $inc: { verifiedReports: 1 } });
       for (const rId of civicIssue.reports) {
@@ -411,7 +410,7 @@ const voteReport = async (req, res) => {
 
     // Update trust score safely
     if (voteType === "upvote") {
-      if (!hadUpvote && report?.communityTrustScore) {
+      if (!hadUpvote) {
         report.communityTrustScore = Math.max(
           0,
           report.communityTrustScore + 1
@@ -419,7 +418,7 @@ const voteReport = async (req, res) => {
       }
       report.upvotes.push(userId);
     } else if (voteType === "downvote") {
-      if (!hadDownvote && report?.communityTrustScore) {
+      if (!hadDownvote) {
         report.communityTrustScore = Math.max(
           0,
           report.communityTrustScore - 1
@@ -429,8 +428,6 @@ const voteReport = async (req, res) => {
     }
 
     await report.save();
-
-    // Recalculate civic issue crowd confidence
     if (report.civicIssue?._id) {
       report.civicIssue.crowdConfidence = await recalculateCrowdConfidence(
         report.civicIssue._id
